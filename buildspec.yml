@@ -10,6 +10,7 @@ phases:
       - ls $CODEBUILD_SRC_DIR
       - mvn package
       - mv target/my-web-app.war my-web-app.war
+      # hello
   post_build:
     commands:
      - pwd
