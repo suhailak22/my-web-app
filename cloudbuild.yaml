@@ -27,7 +27,7 @@ steps:
       - |
         gcloud compute ssh instance-2 --zone=us-central1-a --command='
           cd /var/www/html &&
-          sudo rm -rf node_modules/* && # remove existing Node.js modules (if any)
+          sudo rm -rf node_modules/* &&  # remove existing Node.js modules (if any)
           sudo unzip -o /tmp/application.zip &&  # Unzip application in temporary location
           # your deployment commands here, without npm
           ...
@@ -43,4 +43,3 @@ artifacts:
 
 options:
   logging: CLOUD_LOGGING_ONLY  # Or NONE to disable logs
-
