@@ -1,33 +1,46 @@
 steps:
-  - name: 'gcr.io/cloud-builders/npm'
-    args: ['install']  # Install project dependencies
-  - name: 'gcr.io/cloud-builders/npm'
-    args: ['run', 'build']  # Run the build script
+  - name: 'maven'
+    entrypoint: 'mvn'
+    args: ['package']
+    env:
+      JAVA_HOME: '/usr/lib/jvm/java-17-corretto'  # Use this environment variable to specify the desired Java version
+
+  - name: 'artifact-copy'
+    args:
+      - 'cp'
+      - 'target/my-web-app.war'
+      - '$BUILD_OUTPUT/my-web-app.war'  # Use BUILD_OUTPUT for build artifacts output directory
+
+  - name: 'copy-extensions'
+    args:
+      - 'cp'
+      - '$SRC_DIR/.ebextensions/**/*'
+      - '$BUILD_OUTPUT/.ebextensions/'
+
   - name: 'gcr.io/cloud-builders/gsutil'
     args: ['cp', 'application.zip', 'gs://alb23/Frontend/$(date +%Y-%m-%d-%H:%M:%S)/']  # Copy to GCS
-  - name: 'gcr.io/cloud-builders/gcloud'
+
+  - name: 'gcloud compute ssh instance-2 --zone=us-central1-a --command='
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         gcloud compute ssh instance-2 --zone=us-central1-a --command='
           cd /var/www/html &&
-          sudo rm -rf node_modules/* &&
-          sudo unzip -o /tmp/application.zip &&  # Unzip in a temporary location
-          sudo rm -rf node_modules/* &&
-          sudo npm cache clean --force &&
-          sudo npm install --legacy-peer-deps &&
-          sudo npm install swiper &&
-          sudo npm run build &&
-          cd /var/www/html/build &&
-          sudo pm2 start "npm run start" &&
-          sudo pm2 save
+          sudo rm -rf node_modules/* && # remove existing Node.js modules (if any)
+          sudo unzip -o /tmp/application.zip &&  # Unzip application in temporary location
+          # your deployment commands here, without npm
+          ...
         '  # Combine SSH commands for efficiency
 
 artifacts:
   objects:
-    location: 'gs://alb23/Frontend/'
-    paths: ['application.zip']
+    location: '$BUILD_OUTPUT'
+    paths:
+      - 'my-web-app.war'
+      - '.ebextensions/**/*'
+      - 'application.zip'  # Include if you want to store it as an artifact
 
 options:
   logging: CLOUD_LOGGING_ONLY  # Or NONE to disable logs
+
